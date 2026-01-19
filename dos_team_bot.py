@@ -25,39 +25,47 @@ SHEET_NAME = "DOSTEAM Bot Database"
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
 
+# --- GOOGLE SHEETS ИНТЕГРАЦИЯ ДЛЯ RAILWAY ---
+import os
+import json
 import logging
 import gspread
 from google.oauth2.service_account import Credentials
 
-# --- Вставляем JSON ключ прямо в код ---
-GOOGLE_CREDS_JSON = {
-  "type": "service_account",
-  "project_id": "telegram-bot-473614",
-  "private_key_id": "b27adc9711b59408cf216b6b420fc51233f46de6",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDAjdtuUXoHO+Gw\nfh0D20N2/XWMg8CO2YiP8EXgTLdZzqgBke758P1KV0og/oe9yLuAMttbo92dTB7y\nricVgYxhxQdpYMSnW/SvT1LnBfliGEiaDdcVWr60dlkx5/TiMykkTDHX02dizhsd\nSRtyqh05e4v3CXVuhhWSGndivc7Ko5Vye+sLfhjRkak4lTqjSBTBuwNOK4oiqCqe\nP6+OcTqT3wS7cgpyTBxNRHcqq5ye/OvyrUSTt9ibWJZk+lRTR5HEIpr5Hp+/+uxD\nm86TWrIKjWyjVUWUjbXai/C2+0e9NtUbSu50Sv1kX9Mmj0h4PaFwYFquICJ8uaCp\nN2MV1zAbAgMBAAECggEAKnMbnQZ5UH7zEmW7H86G4QSflYq2OMfcQ19FCF3hTfsx\nLqdtd8yZCnqT7RIv+rb2Hx0XHuzRPow5hma+Vw9oU2WMbL7Ym8y59KwYKrY2dFnG\nJ7BFan/G6yHsKARrCDMfLtFda6c/c5jcgWhMlMrMBpAmGyAKs4L73mnXR/1wSVvE\nSbyRTh+XRzzfkYaYOGmTl1v6gZD7jbIvVd+GDGSdhFQdC3vz/ig9IxpXwOtGQsW5\nz7v9bKa1q/S0ZJFqEBfoh8vLkttEW8tVXIAIVx+/HjoUbR08y0jE45pu0pemDa+k\n2mySdwsP38CH0tbu6g7LM+LTp4hnezAdzcl6T4yvgQKBgQD6nq311FsZPMFL3j+O\n8haY6C2272Y7zk+TvH5dRcDp3lUImPo2gcU4su4hsRmtC+oLLsJc//n4J+y7UXlQ\nIKPwbty0BS/w3dxa41OtaGefkz9CJKwtFHcbz+0K6JJiyDDdlPXR79J3P6Wm2nfY\nbjCiBj4ysAw+KPMb50P0KWM/xwKBgQDEsBGEwppBhAOOtcu3neIsvKSDIQw7W8HR\n/Y7uR+7LBb2OtgMJDu2ZaJehQNEHbE4wnYrZP8CrrDiJQ5iSNE4k4c/oHFoAZ+/F\nHiF85RC6nftWT0lhfgFWEN6kXuE6ervttRWpotlbtd8tXxuouLofZwzCmYFXFLQ3\nHaz7YSF1DQKBgQCp4bX51SCLUuuUCer7co5ux7N1NYIPOCIo+rSNdSL3ZIYvdcLl\n/8E4VdGldO76pgDX47JMaBeBZ07JCsk4z2dRK1TfkkSU+U7NLRsjiIn1WVKf+0va\nouy6JY+AvXW9EAZPrRGUZQQ9YR9gouZqBwdgTOsMYNlrqUZhu7oMX6GvMQKBgFAe\niIRT4RIe/HP9ieZZ4e/nR/xCUgE790/awYY+tv7sb7LaYZInCpIbEOkWxg8IBzG2\newDT/1/u33jKmDO2Kr7LXS1nnyHbNMhO5cVCafYatG8MDRAxi8nLRWYfYA+6PyMt\nSI25UGETTL3mqBWqaeawy3nZnd4jCOYKqJQdlMthAoGAQI63IHx2+fMJV4eRCBAn\nrV+Itxesw57Dibj+C1LsYFAfdcB9g1rOibMLARUwxNfhfWQwPV0dw1WDUHlZ9uJF\nN7YpgmArvw49t7MssCWeQsKYPlUFOe4Fa5WjZ2VdhCwOGSsrR3SLr13nbETJ8Xi2\n5JjGYHP3nwe6gPBvSD6zb1w=\n-----END PRIVATE KEY-----\n",
-  "client_email": "dosbot@telegram-bot-473614.iam.gserviceaccount.com",
-  "client_id": "104597220980291924641",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/dosbot@telegram-bot-473614.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
-
 try:
-    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_info(GOOGLE_CREDS_JSON, scopes=scope)
+    # 1️⃣ Берем JSON ключ из переменной окружения
+    creds_json = os.getenv("GOOGLE_CREDS")
+    if not creds_json:
+        raise ValueError("Переменная окружения GOOGLE_CREDS не установлена!")
+
+    creds_dict = json.loads(creds_json)
+
+    # 2️⃣ Создаем credentials с always_use_jwt_access=True
+    creds = Credentials.from_service_account_info(
+        creds_dict,
+        scopes=[
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ],
+        always_use_jwt_access=True  # 🔑 важная строчка
+    )
+
+    # 3️⃣ Авторизация в gspread
     client = gspread.authorize(creds)
 
-    sheet = client.open("DOSTEAM Bot Database")
+    # 4️⃣ Открываем таблицы
+    SHEET_NAME = "DOSTEAM Bot Database"
+    sheet = client.open(SHEET_NAME)
     users_ws = sheet.worksheet("Лист1")
     events_ws = sheet.worksheet("Events")
     shop_ws = sheet.worksheet("Shop")
 
-    logging.info("✅ Подключение к Google Sheets прошло успешно!")
+    logging.info("✅ Успешное подключение к Google Sheets.")
+
 except Exception as e:
     logging.critical(f"❌ Ошибка подключения к Google Sheets: {e}")
     users_ws = events_ws = shop_ws = None
+
 
 
 
@@ -291,6 +299,7 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
 
 
 
