@@ -26,16 +26,22 @@ logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
 
 # --- GOOGLE SHEETS ИНТЕГРАЦИЯ (без изменений) ---
+# --- GOOGLE SHEETS ИНТЕГРАЦИЯ (новый способ для Railway) ---
 from google.oauth2.service_account import Credentials
+import os
+import json
 
-# --- GOOGLE SHEETS ИНТЕГРАЦИЯ ---
 try:
+    creds_json = os.getenv("GOOGLE_CREDS")
+    if not creds_json:
+        raise ValueError("Переменная окружения GOOGLE_CREDS не установлена!")
+
+    creds_dict = json.loads(creds_json)
     scope = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-
-    creds = Credentials.from_service_account_file("credentials.json", scopes=scope)
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     client = gspread.authorize(creds)
 
     sheet = client.open(SHEET_NAME)
@@ -43,10 +49,9 @@ try:
     events_ws = sheet.worksheet("Events")
     shop_ws = sheet.worksheet("Shop")
 
-    logging.info("Успешное подключение к Google Sheets.")
-
+    logging.info("✅ Успешное подключение к Google Sheets.")
 except Exception as e:
-    logging.error(f"Ошибка подключения к Google Sheets: {e}")
+    logging.error(f"❌ Ошибка подключения к Google Sheets: {e}")
     users_ws = events_ws = shop_ws = None
 
 
@@ -279,3 +284,4 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
