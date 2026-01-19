@@ -25,36 +25,27 @@ SHEET_NAME = "DOSTEAM Bot Database"
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
 
-# --- GOOGLE SHEETS ИНТЕГРАЦИЯ ДЛЯ RAILWAY ---
 import os
 import json
-import logging
 import gspread
 from google.oauth2.service_account import Credentials
+import logging
+
+SHEET_NAME = "DOSTEAM Bot Database"
 
 try:
-    # 1️⃣ Берем JSON ключ из переменной окружения
     creds_json = os.getenv("GOOGLE_CREDS")
     if not creds_json:
         raise ValueError("Переменная окружения GOOGLE_CREDS не установлена!")
 
     creds_dict = json.loads(creds_json)
-
-    # 2️⃣ Создаем credentials с always_use_jwt_access=True
-    creds = Credentials.from_service_account_info(
-        creds_dict,
-        scopes=[
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive"
-        ],
-        always_use_jwt_access=True  # 🔑 важная строчка
-    )
-
-    # 3️⃣ Авторизация в gspread
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
     client = gspread.authorize(creds)
 
-    # 4️⃣ Открываем таблицы
-    SHEET_NAME = "DOSTEAM Bot Database"
     sheet = client.open(SHEET_NAME)
     users_ws = sheet.worksheet("Лист1")
     events_ws = sheet.worksheet("Events")
@@ -65,7 +56,6 @@ try:
 except Exception as e:
     logging.critical(f"❌ Ошибка подключения к Google Sheets: {e}")
     users_ws = events_ws = shop_ws = None
-
 
 
 
@@ -299,6 +289,7 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
 
 
 
