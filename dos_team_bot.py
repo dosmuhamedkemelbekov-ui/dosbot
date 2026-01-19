@@ -1,8 +1,9 @@
-# ... (все импорты и конфигурация до инициализации бота остаются без изменений)
 import asyncio
 import logging
+import os
+import json
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandObject, StateFilter
@@ -10,32 +11,45 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (
-    Message, CallbackQuery, InlineKeyboardButton, 
+    Message, CallbackQuery, InlineKeyboardButton,
     ReplyKeyboardRemove, BotCommand, BotCommandScopeChat
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-# НОВЫЙ ИМПОРТ для прокси
+# НОВЫЙ ИМПОРТ для прокси (если нужен, оставляем)
 from aiogram.client.session.aiohttp import AiohttpSession
 
 # --- КОНФИГУРАЦИЯ ---
 BOT_TOKEN = "8402030731:AAEEx7dVLHZCjgRelF0CLDtz4AB2DxunFCQ"
 ADMIN_IDS = [877202193]
-SHEET_NAME = "DOSTEAM Bot Database" 
+SHEET_NAME = "DOSTEAM Bot Database"
 
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
 
-# --- GOOGLE SHEETS ИНТЕГРАЦИЯ (без изменений) ---
+# ──── GOOGLE SHEETS ИНТЕГРАЦИЯ ────
 try:
-    scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    google_creds_raw = os.getenv("GOOGLE_CREDENTIALS")
+    if not google_creds_raw:
+        raise ValueError("Переменная GOOGLE_CREDENTIALS не найдена в окружении!")
+
+    creds_dict = json.loads(google_creds_raw)
+
+    creds = Credentials.from_service_account_info(
+        creds_dict,
+        scopes=[
+            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/drive"
+        ]
+    )
+
     client = gspread.authorize(creds)
     sheet = client.open(SHEET_NAME)
     users_ws = sheet.worksheet("Лист1")
     events_ws = sheet.worksheet("Events")
     shop_ws = sheet.worksheet("Shop")
     logging.info("Успешное подключение к Google Sheets.")
+
 except Exception as e:
     logging.error(f"Ошибка подключения к Google Sheets: {e}")
     users_ws = events_ws = shop_ws = None
@@ -267,4 +281,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
