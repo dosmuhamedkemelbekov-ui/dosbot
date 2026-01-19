@@ -2,7 +2,6 @@
 import asyncio
 import logging
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandObject, StateFilter
@@ -27,18 +26,29 @@ logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
 
 # --- GOOGLE SHEETS ИНТЕГРАЦИЯ (без изменений) ---
+from google.oauth2.service_account import Credentials
+
+# --- GOOGLE SHEETS ИНТЕГРАЦИЯ ---
 try:
-    scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+
+    creds = Credentials.from_service_account_file("credentials.json", scopes=scope)
     client = gspread.authorize(creds)
+
     sheet = client.open(SHEET_NAME)
     users_ws = sheet.worksheet("Лист1")
     events_ws = sheet.worksheet("Events")
     shop_ws = sheet.worksheet("Shop")
+
     logging.info("Успешное подключение к Google Sheets.")
+
 except Exception as e:
     logging.error(f"Ошибка подключения к Google Sheets: {e}")
     users_ws = events_ws = shop_ws = None
+
 
 # ... (все функции для работы с Google Sheets gs_... остаются без изменений)
 def gs_add_user(user_id: int, username: str, name: str, faculty_course: str):
@@ -267,4 +277,5 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+
     asyncio.run(main())
