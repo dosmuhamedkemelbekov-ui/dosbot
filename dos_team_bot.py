@@ -25,11 +25,13 @@ SHEET_NAME = "DOSTEAM Bot Database"
 logging.basicConfig(level=logging.INFO)
 storage = MemoryStorage()
 
-# --- GOOGLE SHEETS ИНТЕГРАЦИЯ (без изменений) ---
-# --- GOOGLE SHEETS ИНТЕГРАЦИЯ (новый способ для Railway) ---
-from google.oauth2.service_account import Credentials
 import os
 import json
+import logging
+import gspread
+from google.oauth2.service_account import Credentials
+
+SHEET_NAME = "DOSTEAM Bot Database"
 
 try:
     creds_json = os.getenv("GOOGLE_CREDS")
@@ -51,8 +53,9 @@ try:
 
     logging.info("✅ Успешное подключение к Google Sheets.")
 except Exception as e:
-    logging.error(f"❌ Ошибка подключения к Google Sheets: {e}")
+    logging.critical(f"❌ Ошибка подключения к Google Sheets: {e}")
     users_ws = events_ws = shop_ws = None
+
 
 
 # ... (все функции для работы с Google Sheets gs_... остаются без изменений)
@@ -284,4 +287,5 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
 
