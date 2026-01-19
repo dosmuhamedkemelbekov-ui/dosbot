@@ -27,38 +27,39 @@ storage = MemoryStorage()
 
 import os
 import json
+import logging
 import gspread
 from google.oauth2.service_account import Credentials
-import logging
 
 SHEET_NAME = "DOSTEAM Bot Database"
 
 try:
+    # Читаем JSON из переменной окружения
     creds_json = os.getenv("GOOGLE_CREDS")
     if not creds_json:
         raise ValueError("Переменная окружения GOOGLE_CREDS не установлена!")
 
     creds_dict = json.loads(creds_json)
+
+    # Задаём scope для работы с Sheets и Drive
     scope = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
     creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-    client = gspread.authorize(creds)
 
+    # Подключаемся к Google Sheets
+    client = gspread.authorize(creds)
     sheet = client.open(SHEET_NAME)
     users_ws = sheet.worksheet("Лист1")
     events_ws = sheet.worksheet("Events")
     shop_ws = sheet.worksheet("Shop")
 
-    logging.info("✅ Успешное подключение к Google Sheets.")
+    logging.info("✅ Успешное подключение к Google Sheets!")
 
 except Exception as e:
     logging.critical(f"❌ Ошибка подключения к Google Sheets: {e}")
     users_ws = events_ws = shop_ws = None
-
-
-
 
 # ... (все функции для работы с Google Sheets gs_... остаются без изменений)
 def gs_add_user(user_id: int, username: str, name: str, faculty_course: str):
@@ -289,6 +290,7 @@ async def main():
 if __name__ == "__main__":
 
     asyncio.run(main())
+
 
 
 
